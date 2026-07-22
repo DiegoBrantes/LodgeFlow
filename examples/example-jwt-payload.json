@@ -1,0 +1,38 @@
+{
+  "_comment": "EXEMPLO FICTÍCIO — não representa o token real do LodgeFlow. Nenhum token, chave ou assinatura real aparece aqui.",
+
+  "header": {
+    "alg": "<ALGORITMO_DE_ASSINATURA>",
+    "typ": "JWT",
+    "kid": "<IDENTIFICADOR_DA_CHAVE>"
+  },
+
+  "payload": {
+    "sub": "00000000-0000-4000-8000-000000000000",
+    "iss": "https://api.example.invalid",
+    "aud": "example-app",
+    "iat": 1893456000,
+    "exp": 1893459600,
+    "jti": "00000000-0000-4000-8000-00000000000f"
+  },
+
+  "signature": "<ASSINATURA — NUNCA EXPOSTA, CALCULADA COM CHAVE MANTIDA NO COFRE DE SEGREDOS>",
+
+  "claims_explained": {
+    "sub": "Identidade do usuário. É a única informação de identidade que o token carrega.",
+    "iss": "Emissor do token, verificado na validação.",
+    "aud": "Público-alvo do token, para impedir uso cruzado entre aplicações.",
+    "iat": "Momento da emissão.",
+    "exp": "Expiração. Deliberadamente curta.",
+    "jti": "Identificador único do token, útil para revogação pontual e auditoria."
+  },
+
+  "design_notes": {
+    "sem_permissoes_no_token": "O token carrega identidade, NÃO permissões. Um token com permissões congela o estado de autorização no momento da emissão — revogar acesso exigiria esperar a expiração. Resolvendo a autorização a cada requisição, uma mudança de plano ou um bloqueio de conta tem efeito imediato.",
+    "sem_dados_pessoais": "O payload de um JWT é apenas codificado em base64, não criptografado — qualquer pessoa com o token consegue lê-lo. Por isso ele não contém e-mail, nome, telefone nem qualquer dado pessoal.",
+    "vida_curta": "Expiração curta limita a janela de exposição de um token comprometido. A renovação transparente evita que isso custe usabilidade.",
+    "verificacao_stateless": "A assinatura é verificada criptograficamente, sem consulta ao banco. Isso preserva a latência da edge.",
+    "algoritmo_omitido": "O algoritmo de assinatura em uso não é divulgado neste exemplo, assim como o identificador e o material da chave.",
+    "transporte": "O token trafega exclusivamente no cabeçalho Authorization sobre HTTPS — nunca em parâmetro de URL, que acaba registrado em logs e no histórico do navegador."
+  }
+}
