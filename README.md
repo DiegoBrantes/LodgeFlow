@@ -19,6 +19,11 @@
 ![Arquitetura](https://img.shields.io/badge/arquitetura-serverless_edge-orange?style=flat-square)
 ![License](https://img.shields.io/badge/docs-MIT-green?style=flat-square)
 
+<br/>
+
+[**Baixar na App Store**](https://apps.apple.com/br/app/lodgeflow/id6760812034) ·
+[**Baixar no Google Play**](https://play.google.com/store/apps/details?id=com.lodgeflow.app)
+
 </div>
 
 ---
@@ -447,8 +452,9 @@ Detalhamento em [docs/security.md](docs/security.md).
 
 ## Distribuição
 
-O aplicativo é publicado na App Store e no Google Play, com versões desktop assinadas para macOS e
-Windows, aplicação web em Cloudflare Pages e API em Cloudflare Workers.
+O aplicativo está publicado na [App Store](https://apps.apple.com/br/app/lodgeflow/id6760812034) e no
+[Google Play](https://play.google.com/store/apps/details?id=com.lodgeflow.app), com versões desktop
+assinadas para macOS e Windows, aplicação web em Cloudflare Pages e API em Cloudflare Workers.
 
 A diferença de velocidade entre esses alvos molda o processo: backend e web sobem em minutos, mobile
 depende de revisão das lojas. Como o usuário controla quando atualiza, sempre há aparelhos rodando
@@ -477,6 +483,19 @@ Detalhamento em [docs/deployment.md](docs/deployment.md).
 | [api/openapi-example.yaml](api/openapi-example.yaml) | Contrato de API fictício, para demonstrar convenções |
 | [examples/](examples/) | Payloads fictícios de request, response, webhook e JWT |
 | [templates/](templates/) | Templates de configuração sem valores |
+
+---
+
+## Autor
+
+Desenvolvido por **Diego Brantes**.
+
+- LinkedIn — [in/diegobrantes](https://www.linkedin.com/in/diegobrantes/)
+- App Store — [LodgeFlow](https://apps.apple.com/br/app/lodgeflow/id6760812034)
+- Google Play — [LodgeFlow](https://play.google.com/store/apps/details?id=com.lodgeflow.app)
+
+Dúvidas sobre as decisões de arquitetura descritas aqui são bem-vindas nas
+[issues](https://github.com/DiegoBrantes/LodgeFlow/issues).
 
 ---
 
