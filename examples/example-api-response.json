@@ -1,0 +1,95 @@
+{
+  "_comment": "EXEMPLO FICTÍCIO — não representa a API real do LodgeFlow. Valores inventados.",
+
+  "success": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json",
+      "X-RateLimit-Limit": "100",
+      "X-RateLimit-Remaining": "99",
+      "X-RateLimit-Reset": "1893456000"
+    },
+    "body": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "title": "Tarefa de exemplo",
+      "status": "pending",
+      "priority": "medium",
+      "projectId": null,
+      "scheduledFor": "2030-01-01T09:00:00Z",
+      "version": 1,
+      "createdAt": "2030-01-01T08:00:00Z"
+    }
+  },
+
+  "list": {
+    "status": 200,
+    "body": {
+      "data": [
+        {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "title": "Primeira tarefa de exemplo",
+          "status": "pending",
+          "priority": "high",
+          "version": 1,
+          "createdAt": "2030-01-01T08:00:00Z"
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "title": "Segunda tarefa de exemplo",
+          "status": "done",
+          "priority": "low",
+          "version": 3,
+          "createdAt": "2030-01-01T08:05:00Z"
+        }
+      ],
+      "pagination": {
+        "nextCursor": null,
+        "hasMore": false
+      }
+    }
+  },
+
+  "error_validation": {
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "validation_failed",
+        "message": "O campo 'title' é obrigatório.",
+        "details": [
+          { "field": "title", "issue": "required" }
+        ]
+      }
+    }
+  },
+
+  "error_rate_limit": {
+    "status": 429,
+    "headers": {
+      "Retry-After": "30"
+    },
+    "body": {
+      "error": {
+        "code": "rate_limit_exceeded",
+        "message": "Muitas requisições. Tente novamente em instantes."
+      }
+    }
+  },
+
+  "error_plan": {
+    "status": 402,
+    "body": {
+      "error": {
+        "code": "quota_exceeded",
+        "message": "Você atingiu o limite do seu plano para esta operação."
+      }
+    }
+  },
+
+  "notes": {
+    "codigo_estavel": "O campo 'code' é estável e destinado à lógica do cliente. O campo 'message' é para exibição e pode mudar sem quebrar integrações.",
+    "sem_vazamento": "Mensagens de erro nunca expõem stack trace, nome de tabela, consulta SQL ou qualquer detalhe interno do sistema.",
+    "paginacao_por_cursor": "Cursor opaco em vez de offset numérico: mantém a consistência mesmo quando registros são inseridos entre uma página e outra.",
+    "versao": "O campo 'version' é o que permite resolver conflitos de forma determinística quando dois dispositivos alteram o mesmo registro sem terem se visto.",
+    "rate_limit_headers": "Os cabeçalhos de limite permitem que o cliente se autorregule antes de ser bloqueado."
+  }
+}
