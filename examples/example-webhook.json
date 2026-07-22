@@ -1,0 +1,69 @@
+{
+  "_comment": "EXEMPLO FICTÍCIO — não representa um webhook real do LodgeFlow nem de qualquer provedor. Valores inventados.",
+
+  "incoming_webhook": {
+    "method": "POST",
+    "url": "https://api.example.invalid/v1/webhooks/example-provider",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-Example-Signature": "<ASSINATURA_HMAC_CALCULADA_PELO_PROVEDOR>",
+      "X-Example-Timestamp": "1893456000",
+      "X-Example-Event-Id": "evt_00000000000000000000000000"
+    },
+    "body": {
+      "id": "evt_00000000000000000000000000",
+      "type": "example.subscription.updated",
+      "created": 1893456000,
+      "data": {
+        "object": {
+          "id": "sub_0000000000000000",
+          "customer": "cus_0000000000000000",
+          "status": "active",
+          "current_period_end": 1896134400,
+          "plan": {
+            "id": "plan_example_monthly",
+            "interval": "month"
+          }
+        }
+      }
+    }
+  },
+
+  "processing_flow": [
+    "1. Verificar a assinatura criptográfica do cabeçalho. Sem assinatura válida, descartar sem processar.",
+    "2. Verificar o timestamp para rejeitar requisições antigas reproduzidas (replay).",
+    "3. Consultar se o 'id' do evento já foi processado. Se sim, responder 200 sem repetir o efeito.",
+    "4. Registrar o evento como processado.",
+    "5. Aplicar o efeito no domínio.",
+    "6. Responder 200 rapidamente — trabalho pesado é desacoplado para evitar reentrega por timeout."
+  ],
+
+  "responses": {
+    "accepted": {
+      "status": 200,
+      "body": { "received": true }
+    },
+    "duplicate": {
+      "status": 200,
+      "body": { "received": true, "duplicate": true },
+      "_note": "Reentrega retorna sucesso sem reaplicar o efeito. Idempotência é obrigatória: provedores reentregam eventos rotineiramente."
+    },
+    "invalid_signature": {
+      "status": 400,
+      "body": {
+        "error": {
+          "code": "invalid_signature",
+          "message": "Assinatura inválida."
+        }
+      },
+      "_note": "A resposta é deliberadamente genérica. Detalhar por que a verificação falhou ajudaria um atacante a iterar."
+    }
+  },
+
+  "notes": {
+    "assinatura_primeiro": "A verificação de assinatura acontece ANTES de qualquer parsing de domínio ou acesso ao banco. Um payload não autenticado nunca chega a consumir recursos.",
+    "idempotencia": "Todo provedor reentrega eventos — por timeout, por retry, por falha de rede. Um webhook que não é idempotente cobra duas vezes, envia duas notificações ou duplica registros.",
+    "resposta_rapida": "Provedores tratam resposta lenta como falha e reentregam. Confirmar rápido e processar de forma desacoplada evita uma cascata de reentregas.",
+    "sem_confianca_no_payload": "O conteúdo do webhook é tratado como entrada não confiável mesmo após a verificação de assinatura, e passa por validação de esquema."
+  }
+}
