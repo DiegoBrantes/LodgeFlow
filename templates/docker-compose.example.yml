@@ -1,0 +1,104 @@
+# =============================================================================
+# EXEMPLO ILUSTRATIVO — NÃO É A INFRAESTRUTURA DO LODGEFLOW
+# =============================================================================
+#
+# ⚠️  O LodgeFlow NÃO usa Docker em produção.
+#
+#     O backend roda como funções serverless na edge (Cloudflare Workers), sem
+#     containers, sem orquestração e sem servidores persistentes. Essa decisão e
+#     seus trade-offs estão documentados em SYSTEM_DESIGN.md.
+#
+# Este arquivo existe apenas para demonstrar como um ambiente de desenvolvimento
+# local containerizado seria organizado em um projeto com essa necessidade —
+# serviços de apoio, healthchecks, isolamento de rede e segredos externalizados.
+#
+# Nenhum valor, credencial, host ou nome real de serviço aparece aqui.
+#
+# =============================================================================
+
+version: "3.9"
+
+services:
+  # --- API de exemplo --------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: example-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Valores vêm do .env local, nunca deste arquivo.
+      # Veja env.example para a lista de variáveis.
+      ENVIRONMENT: development
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      LOG_LEVEL: debug
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_started
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --- Banco de dados de exemplo --------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: example-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    # Sem mapeamento de porta para o host: o banco é alcançável apenas pela
+    # rede interna. Exponha somente se precisar conectar uma ferramenta externa.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Cache de exemplo ------------------------------------------------------
+  cache:
+    image: redis:7-alpine
+    container_name: example-cache
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - cache_data:/data
+    networks:
+      - internal
+
+volumes:
+  db_data:
+  cache_data:
+
+networks:
+  internal:
+    driver: bridge
+
+# =============================================================================
+# PRÁTICAS DEMONSTRADAS
+# =============================================================================
+#
+#  · Segredos vêm de variáveis de ambiente externas, nunca escritos no arquivo
+#  · Serviços de dados não expõem portas ao host sem necessidade
+#  · Healthchecks permitem ordenação real de dependências, não apenas ordem de
+#    inicialização — `depends_on` sozinho não espera o serviço ficar pronto
+#  · Volumes nomeados preservam dados entre reinicializações
+#  · Rede interna dedicada isola a comunicação entre serviços
+#  · Imagens fixadas por versão, nunca `latest`
+#
+# =============================================================================
