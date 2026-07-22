@@ -1,0 +1,31 @@
+{
+  "_comment": "EXEMPLO FICTÍCIO — não representa a API real do LodgeFlow. Valores inventados.",
+
+  "description": "Criação de tarefa. Demonstra idempotência e identificador gerado no cliente.",
+
+  "request": {
+    "method": "POST",
+    "url": "https://api.example.invalid/v1/tasks",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer <TOKEN_JWT_AQUI>",
+      "Idempotency-Key": "00000000-0000-4000-8000-00000000000a",
+      "X-Client-Platform": "ios",
+      "X-Client-Version": "1.0.0"
+    },
+    "body": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "title": "Tarefa de exemplo",
+      "priority": "medium",
+      "projectId": null,
+      "scheduledFor": "2030-01-01T09:00:00Z"
+    }
+  },
+
+  "notes": {
+    "id_gerado_no_cliente": "O identificador vem do dispositivo, não do banco. Sem isso, um registro criado offline não poderia ser referenciado por outros registros locais antes de chegar ao servidor.",
+    "idempotency_key": "Garante que o reenvio de uma mutação — comum ao drenar a fila offline — não crie duplicatas. A mesma chave sempre retorna o mesmo resultado.",
+    "authorization": "Token de curta duração. Carrega identidade, não permissões: a autorização é resolvida no servidor a cada requisição.",
+    "client_headers": "Plataforma e versão do cliente tornam regressões atribuíveis a uma versão específica no rastreamento de erros."
+  }
+}
