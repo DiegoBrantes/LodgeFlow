@@ -1,0 +1,88 @@
+# =============================================================================
+# .gitignore — repositório de documentação
+# =============================================================================
+# Este repositório contém apenas documentação. As regras abaixo são deliberadamente
+# amplas: é preferível ignorar demais a versionar um segredo por acidente.
+# =============================================================================
+
+# --- Segredos e ambiente (NUNCA versionar) -----------------------------------
+.env
+.env.*
+!.env.example
+*.env
+secrets/
+credentials/
+*.pem
+*.key
+*.p8
+*.p12
+*.mobileprovision
+*.keystore
+*.jks
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+
+# --- Dependências ------------------------------------------------------------
+node_modules/
+.pnp/
+.pnp.js
+
+# --- Build e artefatos -------------------------------------------------------
+dist/
+build/
+out/
+.output/
+*.tsbuildinfo
+
+# --- Cloudflare / Wrangler ---------------------------------------------------
+.wrangler/
+.dev.vars
+.dev.vars.*
+
+# --- Logs --------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Cache -------------------------------------------------------------------
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+
+# --- Sistema operacional -----------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# --- Editores e IDEs ---------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-workspace
+*~
+
+# --- Temporários -------------------------------------------------------------
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+
+# --- Cobertura e testes ------------------------------------------------------
+coverage/
+.nyc_output/
+
+# --- Utilitários locais (não fazem parte da documentação) --------------------
+crop-screenshots.ps1
