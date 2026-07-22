@@ -1,0 +1,330 @@
+## ⚠️ EXEMPLO FICTÍCIO — NÃO É A API DO LODGEFLOW
+##
+## Este arquivo demonstra como um contrato de API é organizado e documentado.
+## Todos os caminhos, esquemas, campos e valores abaixo são INVENTADOS para fins ilustrativos.
+##
+## A API real do LodgeFlow NÃO está documentada aqui:
+##   - o domínio abaixo não existe
+##   - os caminhos abaixo não correspondem a rotas reais
+##   - os esquemas abaixo não refletem o modelo de dados de produção
+##
+## Consulte docs/backend.md para a arquitetura conceitual da camada de API.
+
+openapi: 3.1.0
+
+info:
+  title: Example Task API
+  version: 1.0.0
+  description: |
+    Contrato de API **fictício**, criado apenas para demonstrar convenções de organização:
+    versionamento, autenticação, paginação, idempotência, tratamento de erro e limites de requisição.
+
+    Não representa a API do LodgeFlow.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.invalid/v1
+    description: Servidor fictício (o domínio `.invalid` é reservado e nunca resolve)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Tasks
+    description: Operações de exemplo sobre tarefas
+
+paths:
+  /tasks:
+    get:
+      tags: [Tasks]
+      summary: Lista tarefas
+      description: |
+        Demonstra paginação por cursor, filtros delimitados e ordenação.
+
+        Convenção adotada: consultas de coleção são **sempre** delimitadas por um recorte
+        (período, estado, projeto). Não existe listagem irrestrita.
+      operationId: listTasks
+      parameters:
+        - name: status
+          in: query
+          description: Filtra por estado
+          schema:
+            type: string
+            enum: [pending, in_progress, done]
+        - name: from
+          in: query
+          description: Início da janela de tempo (ISO 8601)
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: Fim da janela de tempo (ISO 8601)
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          description: Itens por página
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+        - name: cursor
+          in: query
+          description: Cursor opaco da página seguinte
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Coleção de tarefas
+          headers:
+            X-RateLimit-Remaining:
+              description: Requisições restantes na janela atual
+              schema: { type: integer }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskList"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+    post:
+      tags: [Tasks]
+      summary: Cria uma tarefa
+      description: |
+        Demonstra duas convenções importantes:
+
+        1. **Identificador gerado pelo cliente** — necessário para criação offline, já que o registro
+           precisa de identidade antes de existir no servidor.
+        2. **Idempotência** — o cabeçalho `Idempotency-Key` garante que um reenvio (comum ao drenar
+           uma fila offline) não crie duplicatas.
+      operationId: createTask
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Chave única por operação; reenvios retornam o mesmo resultado
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskInput"
+      responses:
+        "201":
+          description: Tarefa criada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/PaymentRequired" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /tasks/{taskId}:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      tags: [Tasks]
+      summary: Obtém uma tarefa
+      operationId: getTask
+      responses:
+        "200":
+          description: Tarefa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+    delete:
+      tags: [Tasks]
+      summary: Remove uma tarefa
+      description: |
+        Demonstra **exclusão lógica**: o registro é marcado como removido e só é expurgado depois,
+        por rotina de limpeza.
+
+        Sem isso, um dispositivo offline não conseguiria distinguir "removido em outro aparelho" de
+        "ainda não sincronizado" — e recriaria o registro ao reconectar.
+      operationId: deleteTask
+      responses:
+        "204":
+          description: Removido
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token de curta duração enviado no cabeçalho `Authorization`.
+
+        O token carrega **identidade**, não permissões — a autorização é resolvida no servidor a cada
+        requisição, de modo que mudanças de acesso tenham efeito imediato.
+
+  schemas:
+    Task:
+      type: object
+      required: [id, title, status, createdAt, version]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Gerado pelo cliente, para viabilizar criação offline
+          example: "00000000-0000-4000-8000-000000000001"
+        title:
+          type: string
+          maxLength: 200
+          example: "Tarefa de exemplo"
+        status:
+          type: string
+          enum: [pending, in_progress, done]
+          example: pending
+        priority:
+          type: string
+          enum: [low, medium, high]
+          example: medium
+        projectId:
+          type: [string, "null"]
+          format: uuid
+          example: null
+        scheduledFor:
+          type: [string, "null"]
+          format: date-time
+          example: "2030-01-01T09:00:00Z"
+        version:
+          type: integer
+          description: Usado na reconciliação determinística entre dispositivos
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+          example: "2030-01-01T08:00:00Z"
+
+    TaskInput:
+      type: object
+      required: [id, title]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "00000000-0000-4000-8000-000000000001"
+        title:
+          type: string
+          maxLength: 200
+          example: "Tarefa de exemplo"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+        projectId:
+          type: [string, "null"]
+          format: uuid
+        scheduledFor:
+          type: [string, "null"]
+          format: date-time
+
+    TaskList:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        pagination:
+          type: object
+          properties:
+            nextCursor:
+              type: [string, "null"]
+              example: null
+            hasMore:
+              type: boolean
+              example: false
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Código estável, seguro para lógica de cliente
+              example: validation_failed
+            message:
+              type: string
+              description: Mensagem legível, sem detalhes internos do sistema
+              example: "O campo 'title' é obrigatório."
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string, example: title }
+                  issue: { type: string, example: required }
+
+  responses:
+    BadRequest:
+      description: Payload inválido
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Token ausente, inválido ou expirado
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    PaymentRequired:
+      description: O plano atual não permite a operação
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Autenticado, mas sem direito sobre o recurso
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Recurso inexistente
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    PayloadTooLarge:
+      description: Corpo da requisição acima do limite
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    TooManyRequests:
+      description: Limite de requisições excedido
+      headers:
+        Retry-After:
+          description: Segundos até a próxima tentativa permitida
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
